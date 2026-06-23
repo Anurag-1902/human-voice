@@ -3,20 +3,20 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 /**
  * Humanize API — Vercel serverless function.
  *
- * This replaces the old Supabase/Lovable edge function. It calls Google's
- * Gemini API directly (OpenAI-compatible endpoint) using a single free
- * GEMINI_API_KEY. The two-pass pipeline, tone overlays, condense logic,
- * re-humanize behaviour, and paragraph-matching are ported verbatim.
+ * Calls Groq (OpenAI-compatible endpoint) using a single free GROQ_API_KEY.
+ * Groq's free tier is far more generous than Gemini's (no credit card needed),
+ * which keeps rate-limit errors away for a personal tool. The two-pass
+ * pipeline, tone overlays, condense logic, re-humanize behaviour, and
+ * paragraph-matching are unchanged.
  *
- * Required env var: GEMINI_API_KEY  (get a free key at https://aistudio.google.com/apikey)
+ * Required env var: GROQ_API_KEY  (get a free key at https://console.groq.com/keys)
  */
 
-// Gemini's free tier covers the Flash models. Swap this if you want another:
-//   "gemini-2.5-flash"      → solid default, free tier
-//   "gemini-2.5-flash-lite" → cheapest/fastest
-//   "gemini-3.5-flash"      → newest flash
-const MODEL = "gemini-2.0-flash";
-const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+// Groq models on the free tier. Swap this if you want another:
+//   "llama-3.3-70b-versatile" → best quality, ~1,000 requests/day free (default)
+//   "llama-3.1-8b-instant"    → fastest, ~14,400 requests/day free (more headroom)
+const MODEL = "llama-3.3-70b-versatile";
+const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 
 export const config = { maxDuration: 60 };
 
@@ -132,15 +132,15 @@ class HttpError extends Error {
 }
 
 async function runCompletion(systemPrompt: string, userText: string, temperature = 1.05): Promise<string> {
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-  if (!GEMINI_API_KEY) {
-    throw new HttpError(500, "GEMINI_API_KEY is not configured on the server.");
+  const GROQ_API_KEY = process.env.GROQ_API_KEY;
+  if (!GROQ_API_KEY) {
+    throw new HttpError(500, "GROQ_API_KEY is not configured on the server.");
   }
 
-  const response = await fetch(GEMINI_URL, {
+  const response = await fetch(GROQ_URL, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${GEMINI_API_KEY}`,
+      Authorization: `Bearer ${GROQ_API_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
@@ -159,7 +159,7 @@ async function runCompletion(systemPrompt: string, userText: string, temperature
       throw new HttpError(429, "Rate limit reached. Wait a moment and try again.");
     }
     const errorText = await response.text();
-    console.error("Gemini error:", response.status, errorText);
+    console.error("Groq error:", response.status, errorText);
     throw new HttpError(502, "The AI service failed to process the text. Try again.");
   }
 
