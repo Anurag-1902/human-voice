@@ -15,7 +15,7 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 //   "gemini-2.5-flash"      → solid default, free tier
 //   "gemini-2.5-flash-lite" → cheapest/fastest
 //   "gemini-3.5-flash"      → newest flash
-const MODEL = "gemini-2.5-flash";
+const MODEL = "gemini-2.0-flash";
 const GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
 
 export const config = { maxDuration: 60 };
